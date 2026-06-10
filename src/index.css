@@ -1,0 +1,153 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: #f0f4f8;
+  color: #1a202c;
+  min-height: 100vh;
+}
+
+.app-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* Breadcrumbs */
+nav[aria-label="Breadcrumb"] ol {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+nav[aria-label="Breadcrumb"] li {
+  display: flex;
+  align-items: center;
+}
+
+nav[aria-label="Breadcrumb"] a {
+  color: #2b6cb0;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+nav[aria-label="Breadcrumb"] a:hover {
+  text-decoration: underline;
+}
+
+nav[aria-label="Breadcrumb"] span[aria-current="page"] {
+  color: #4a5568;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.sep {
+  margin-left: 0.5rem;
+  color: #a0aec0;
+  font-weight: 700;
+}
+
+/* Pages */
+.page {
+  text-align: center;
+}
+
+.page h1 {
+  font-size: 1.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #4a5568;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+/* Card (button) */
+.card {
+  display: block;
+  width: 100%;
+  padding: 1rem 0.75rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #2d3748;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+  border-color: #3182ce;
+  color: #2b6cb0;
+  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.15);
+  transform: translateY(-1px);
+}
+
+.back-btn {
+  margin-top: 1.5rem;
+  max-width: 280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Schedule */
+.schedule-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem auto;
+  max-width: 400px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.schedule-item:last-child {
+  border-bottom: none;
+}
+
+.schedule-item .label {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.schedule-item .value {
+  font-weight: 700;
+  color: #2b6cb0;
+  font-size: 1.05rem;
+}
+
+.no-schedule p {
+  color: #e53e3e;
+  font-weight: 600;
+}
