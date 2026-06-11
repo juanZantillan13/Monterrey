@@ -4,6 +4,7 @@ import Inicio from "./pages/Inicio";
 import Municipio from "./pages/Municipio";
 import Zona from "./pages/Zona";
 import Colonia from "./pages/Colonia";
+import Admin from "./pages/Admin"; 
 
 export default function App() {
   return (
@@ -21,6 +22,8 @@ export default function App() {
             path="/municipio/:municipioId/zona/:zonaId/colonia/:coloniaId"
             element={<Colonia />}
           />
+          {/* ─── 2. NUEVA RUTA PARA ADMINISTRADORES ─── */}
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
     </div>
