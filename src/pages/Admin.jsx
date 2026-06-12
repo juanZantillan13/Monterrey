@@ -1,4 +1,5 @@
-// src/pages/Admin.jsx
+// src/pages/Admin.jsx - Versión corregida
+
 import { useState, useEffect } from "react";
 import { auth, signInWithEmailAndPassword, signOut } from "../firebase";
 
@@ -10,6 +11,11 @@ export default function Admin() {
   const [reportes, setReportes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [filtroEstatus, setFiltroEstatus] = useState("todos");
+  
+  // Estados para validación de login
+  const [errorEmail, setErrorEmail] = useState("");
+  const [errorPassword, setErrorPassword] = useState("");
+  const [touched, setTouched] = useState({ email: false, password: false });
   
   const DB_URL = "https://agua-mty-default-rtdb.firebaseio.com";
 
@@ -54,11 +60,85 @@ export default function Admin() {
     }
   }, [isLoggedIn]);
 
+  // ─── VALIDACIONES DEL FRONTEND ───
+  const validarEmail = (email) => {
+    // 1. Validar que no esté vacío
+    if (!email.trim()) {
+      return "El email es obligatorio";
+    }
+    
+    // 2. Validar longitud mínima y máxima
+    if (email.length < 5) {
+      return "El email debe tener al menos 5 caracteres";
+    }
+    if (email.length > 100) {
+      return "El email no puede exceder 100 caracteres";
+    }
+    
+    // 3. Validar que contenga @ (obligatorio)
+    if (!email.includes('@')) {
+      return "El email debe contener el símbolo @";
+    }
+    
+    // 4. Validar formato completo con regex (más estricto)
+    // Esta regex valida: texto@dominio.extension
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Email inválido (ejemplo: admin@aguamty.com)";
+    }
+    
+    // 5. Validar que no tenga espacios
+    if (email.includes(' ')) {
+      return "El email no puede contener espacios";
+    }
+    
+    return "";
+  };
+
+  const validarPassword = (password) => {
+    if (!password) {
+      return "La contraseña es obligatoria";
+    }
+    if (password.length < 6) {
+      return "La contraseña debe tener al menos 6 caracteres";
+    }
+    if (password.length > 50) {
+      return "La contraseña no puede exceder 50 caracteres";
+    }
+    return "";
+  };
+
+  // Validar en tiempo real
+  useEffect(() => {
+    if (touched.email) {
+      setErrorEmail(validarEmail(email));
+    }
+  }, [email, touched.email]);
+
+  useEffect(() => {
+    if (touched.password) {
+      setErrorPassword(validarPassword(password));
+    }
+  }, [password, touched.password]);
+
+  const esFormularioValido = () => {
+    return validarEmail(email) === "" && validarPassword(password) === "";
+  };
+
   // 🔐 LOGIN CON FIREBASE AUTHENTICATION (REAL)
   const manejarLogin = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !password) {
-      alert("Por favor, llena todos los campos.");
+    
+    // Marcar campos como tocados para mostrar errores
+    setTouched({ email: true, password: true });
+    
+    // Validaciones frontend antes de llamar a Firebase
+    const emailError = validarEmail(email);
+    const passwordError = validarPassword(password);
+    
+    if (emailError || passwordError) {
+      setErrorEmail(emailError);
+      setErrorPassword(passwordError);
       return;
     }
 
@@ -70,6 +150,10 @@ export default function Admin() {
       
       if (userCredential.user) {
         setIsLoggedIn(true);
+        // Limpiar errores al loguearse exitosamente
+        setErrorEmail("");
+        setErrorPassword("");
+        setTouched({ email: false, password: false });
       }
     } catch (error) {
       console.error("Error de autenticación:", error);
@@ -77,13 +161,16 @@ export default function Admin() {
       // Mensajes de error más amigables
       switch (error.code) {
         case 'auth/user-not-found':
-          alert("❌ No existe una cuenta con este email");
+          setErrorEmail("❌ No existe una cuenta con este email");
           break;
         case 'auth/wrong-password':
-          alert("❌ Contraseña incorrecta");
+          setErrorPassword("❌ Contraseña incorrecta");
           break;
         case 'auth/invalid-email':
-          alert("❌ Email inválido");
+          setErrorEmail("❌ Email inválido");
+          break;
+        case 'auth/too-many-requests':
+          setErrorEmail("❌ Demasiados intentos. Espera un momento");
           break;
         default:
           alert(`❌ Error: ${error.message}`);
@@ -128,6 +215,9 @@ export default function Admin() {
       await signOut(auth);
       setEmail("");
       setPassword("");
+      setErrorEmail("");
+      setErrorPassword("");
+      setTouched({ email: false, password: false });
       setIsLoggedIn(false);
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
@@ -180,60 +270,82 @@ export default function Admin() {
             Ingresa tus credenciales
           </p>
           
-          <form onSubmit={manejarLogin}>
+          <form onSubmit={manejarLogin} noValidate>
+            {/* Campo EMAIL */}
             <div style={{ marginBottom: "20px", textAlign: "left" }}>
               <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>
-                Email
+                Email *
               </label>
               <input 
-                type="email" 
-                placeholder="admin@aguamty.com"
+                type="text"  // Cambiado de "email" a "text" para validación manual
+                placeholder="admin@gmail.com"
                 style={{ 
                   width: "100%", 
                   padding: "12px", 
                   borderRadius: "8px", 
-                  border: "1px solid #ddd", 
-                  fontSize: "15px"
+                  border: errorEmail && touched.email ? "2px solid #d9534f" : "1px solid #ddd", 
+                  fontSize: "15px",
+                  backgroundColor: errorEmail && touched.email ? "#fff5f5" : "white"
                 }}
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
+                onBlur={() => setTouched({ ...touched, email: true })}
                 disabled={autenticando}
                 required
               />
+              {touched.email && errorEmail && (
+                <p style={{ color: "#d9534f", fontSize: "12px", marginTop: "5px", marginBottom: "0" }}>
+                  ❌ {errorEmail}
+                </p>
+              )}
+              <p style={{ color: "#999", fontSize: "11px", marginTop: "5px", marginBottom: "0" }}>
+                 Mínimo 5, máximo 100 caracteres. Debe contener @
+              </p>
             </div>
             
+            {/* Campo CONTRASEÑA */}
             <div style={{ marginBottom: "25px", textAlign: "left" }}>
               <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>
-                Contraseña
+                Contraseña *
               </label>
               <input 
                 type="password" 
-                placeholder="••••••••"
+                placeholder="•••••••• (mínimo 6 caracteres)"
                 style={{ 
                   width: "100%", 
                   padding: "12px", 
                   borderRadius: "8px", 
-                  border: "1px solid #ddd",
-                  fontSize: "15px"
+                  border: errorPassword && touched.password ? "2px solid #d9534f" : "1px solid #ddd",
+                  fontSize: "15px",
+                  backgroundColor: errorPassword && touched.password ? "#fff5f5" : "white"
                 }}
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
+                onBlur={() => setTouched({ ...touched, password: true })}
                 disabled={autenticando}
                 required
               />
+              {touched.password && errorPassword && (
+                <p style={{ color: "#d9534f", fontSize: "12px", marginTop: "5px", marginBottom: "0" }}>
+                  ❌ {errorPassword}
+                </p>
+              )}
+              <p style={{ color: "#999", fontSize: "11px", marginTop: "5px", marginBottom: "0" }}>
+                 Mínimo 6, máximo 50 caracteres
+              </p>
             </div>
             
             <button 
               type="submit" 
-              disabled={autenticando}
+              disabled={autenticando || !esFormularioValido()}
               style={{ 
                 width: "100%", 
                 padding: "12px", 
-                background: autenticando ? "#ccc" : "#0275d8", 
+                background: (autenticando || !esFormularioValido()) ? "#ccc" : "#0275d8", 
                 color: "white", 
                 border: "none", 
                 borderRadius: "8px", 
-                cursor: autenticando ? "not-allowed" : "pointer", 
+                cursor: (autenticando || !esFormularioValido()) ? "not-allowed" : "pointer", 
                 fontWeight: "600", 
                 fontSize: "16px"
               }}
@@ -256,7 +368,7 @@ export default function Admin() {
     );
   }
 
-  // ─── PANEL ADMINISTRATIVO ───
+  // ─── PANEL ADMINISTRATIVO (igual que antes, sin cambios) ───
   if (cargando) {
     return (
       <div className="page" style={{ textAlign: "center", padding: "60px 20px" }}>
@@ -307,7 +419,7 @@ export default function Admin() {
         }}>
           <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: "8px", padding: "15px", textAlign: "center" }}>
             <div style={{ fontSize: "28px", fontWeight: "bold" }}>{estadisticas.total}</div>
-            <div>Total Reportes</div>
+            <div>📊 Total Reportes</div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: "8px", padding: "15px", textAlign: "center" }}>
             <div style={{ fontSize: "28px", fontWeight: "bold" }}>{estadisticas.pendientes}</div>
@@ -347,7 +459,7 @@ export default function Admin() {
       {/* Lista de reportes */}
       {reportesFiltrados.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px", background: "#f9f9f9", borderRadius: "12px" }}>
-          <p>No hay reportes</p>
+          <p>📭 No hay reportes {filtroEstatus !== "todos" ? `con estado "${filtroEstatus}"` : ""}</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
@@ -372,20 +484,20 @@ export default function Admin() {
                   </div>
 
                   <div style={{ fontWeight: "bold", color: "#0275d8" }}>
-                     {rep.municipioNombre}
+                    🏛️ {rep.municipioNombre}
                   </div>
                   <div style={{ fontSize: "14px", color: "#666", marginBottom: "12px" }}>
-                    {rep.zonaNombre} — Col. {rep.coloniaNombre}
+                    📍 {rep.zonaNombre} — Col. {rep.coloniaNombre}
                   </div>
 
                   <div style={{ background: "#f8f9fa", padding: "12px", borderRadius: "8px", marginBottom: "15px" }}>
-                    <strong> Descripción:</strong>
-                    <p style={{ margin: "8px 0 0 0" }}>{rep.descripcion}</p>
+                    <strong>📝 Descripción:</strong>
+                    <p style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>{rep.descripcion}</p>
                   </div>
 
                   <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                     <select 
-                      style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #ddd" }}
+                      style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #ddd", cursor: "pointer" }}
                       value={rep.estatus} 
                       onChange={(e) => cambiarEstatus(rep.id, e.target.value)}
                     >
@@ -396,6 +508,8 @@ export default function Admin() {
                     <button 
                       onClick={() => eliminarReporte(rep.id)}
                       style={{ background: "#fff", color: "#d9534f", border: "1px solid #d9534f", padding: "7px 15px", borderRadius: "6px", cursor: "pointer" }}
+                      onMouseEnter={(e) => { e.target.style.background = "#d9534f"; e.target.style.color = "white"; }}
+                      onMouseLeave={(e) => { e.target.style.background = "#fff"; e.target.style.color = "#d9534f"; }}
                     >
                       🗑️ Eliminar
                     </button>
